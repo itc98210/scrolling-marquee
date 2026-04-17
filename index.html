@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式直播控制台</title>
+    <meta name="description" content="包含跑馬燈、計時器、影片播放、抽號碼與即時互動功能的直播控制台">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <header class="top-bar">
+        <!-- 6. 活動標題動畫 -->
+        <div class="event-title-container">
+            <h1 id="event-title" class="typewriter">歡迎來到直播間</h1>
+        </div>
+        <!-- 7. 主持人資訊 -->
+        <div class="host-info">
+            <a href="https://facebook.com" target="_blank" class="social-icon fb" title="Facebook"><i class="fab fa-facebook"></i></a>
+            <a href="https://youtube.com" target="_blank" class="social-icon yt" title="YouTube"><i class="fab fa-youtube"></i></a>
+            <a href="https://instagram.com" target="_blank" class="social-icon ig" title="Instagram"><i class="fab fa-instagram"></i></a>
+        </div>
+    </header>
+
+    <!-- 1. 跑馬燈模組 -->
+    <div class="marquee-wrapper">
+        <div class="marquee-container" id="marquee-bg">
+            <marquee behavior="scroll" direction="left" id="marquee-text" scrollamount="5">🌟 歡迎來到本直播間，請追蹤並按讚！ 🔥🚀</marquee>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="left-panel">
+            <!-- 3. YouTube 影片播放區 -->
+            <section class="card youtube-section">
+                <div class="card-header">
+                    <h2><i class="fab fa-youtube"></i> YouTube 播放區</h2>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <input type="text" id="yt-url" placeholder="貼入 YouTube 網址 (例: https://youtu.be/...)">
+                        <button id="load-yt-btn" class="primary-btn"><i class="fas fa-play"></i> 載入</button>
+                    </div>
+                    <div class="video-container">
+                        <iframe id="yt-iframe" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <div class="video-placeholder" id="yt-placeholder">
+                            <i class="fab fa-youtube"></i>
+                            <p>請輸入網址並載入影片</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 5. 下方互動區 -->
+            <section class="card interaction-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-hand-sparkles"></i> 互動打賞區</h2>
+                </div>
+                <div class="card-body">
+                    <p class="interaction-desc">點擊下方圖示與全場觀眾一起互動吧！</p>
+                    <div class="reaction-buttons">
+                        <button class="reaction-btn" data-type="like">
+                            <div class="icon-wrapper">❤️</div> 
+                            <span class="count" id="count-like">0</span>
+                        </button>
+                        <button class="reaction-btn" data-type="star">
+                            <div class="icon-wrapper">⭐</div> 
+                            <span class="count" id="count-star">0</span>
+                        </button>
+                        <button class="reaction-btn" data-type="rocket">
+                            <div class="icon-wrapper">🚀</div> 
+                            <span class="count" id="count-rocket">0</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="right-panel">
+            <!-- 標題與跑馬燈設定 -->
+            <section class="card settings-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-cog"></i> 介面設定</h2>
+                </div>
+                <div class="card-body">
+                    <div class="setting-group">
+                        <label>活動標題</label>
+                        <input type="text" id="title-input" value="歡迎來到直播間">
+                    </div>
+                    <div class="setting-group">
+                        <label>標題動畫效果</label>
+                        <select id="title-anim-select">
+                            <option value="typewriter">打字機</option>
+                            <option value="gradient">漸層流動</option>
+                            <option value="floating">漂浮動態</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label>佈景主題</label>
+                        <select id="theme-select">
+                            <option value="system">系統預設</option>
+                            <option value="dark">深色模式 (Dark)</option>
+                            <option value="light">淺色模式 (Light)</option>
+                        </select>
+                    </div>
+
+                    <hr class="divider">
+                    
+                    <div class="setting-group">
+                        <label>跑馬燈內容 (支援 Emoji)</label>
+                        <input type="text" id="marquee-input" value="🌟 歡迎來到本直播間，請追蹤並按讚！ 🔥🚀">
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-item color-picker">
+                            <label>文字</label>
+                            <input type="color" id="marquee-color" value="#ffffff">
+                        </div>
+                        <div class="setting-item color-picker">
+                            <label>背景</label>
+                            <input type="color" id="marquee-bg-color" value="#e53935">
+                        </div>
+                        <div class="setting-item range-slider">
+                            <label>速度: <span id="speed-val">5</span></label>
+                            <input type="range" id="marquee-speed" min="1" max="30" value="5">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. 倒數計時器 -->
+            <section class="card timer-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-hourglass-half"></i> 倒數計時器</h2>
+                </div>
+                <div class="card-body timer-body">
+                    <div class="timer-display" id="timer-display">05:00</div>
+                    <div class="timer-controls">
+                        <div class="time-input">
+                            <input type="number" id="timer-min" min="0" value="5">
+                            <span>分</span>
+                        </div>
+                        <div class="time-input">
+                            <input type="number" id="timer-sec" min="0" max="59" value="0">
+                            <span>秒</span>
+                        </div>
+                    </div>
+                    <div class="timer-buttons">
+                        <button id="start-timer-btn" class="primary-btn"><i class="fas fa-play"></i> 開始</button>
+                        <button id="pause-timer-btn" class="secondary-btn"><i class="fas fa-pause"></i> 暫停</button>
+                        <button id="reset-timer-btn" class="outline-btn"><i class="fas fa-undo"></i> 重置</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. 隨機抽號碼機 -->
+            <section class="card random-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-dice"></i> 抽號碼機</h2>
+                </div>
+                <div class="card-body">
+                    <div class="setting-row">
+                        <div class="setting-item">
+                            <label>起始值</label>
+                            <input type="number" id="rand-start" value="1">
+                        </div>
+                        <div class="setting-item">
+                            <label>結束值</label>
+                            <input type="number" id="rand-end" value="50">
+                        </div>
+                        <div class="setting-item">
+                            <label>抽出數量</label>
+                            <input type="number" id="rand-count" value="1" min="1">
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label>排除號碼 (以逗號分隔，例如: 5,12)</label>
+                        <input type="text" id="rand-exclude" placeholder="5, 12, 30">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="rand-norepeat" checked>
+                        <label for="rand-norepeat">避免重複抽取 (不放回)</label>
+                    </div>
+                    
+                    <div class="random-buttons">
+                        <button id="draw-btn" class="primary-btn glow-btn"><i class="fas fa-bolt"></i> 抽取號碼</button>
+                        <button id="clear-drawn-btn" class="outline-btn"><i class="fas fa-trash"></i> 清除已抽</button>
+                    </div>
+                    
+                    <div class="drawn-display-area">
+                        <div class="drawn-display" id="drawn-result">
+                            <span class="placeholder-text">等待抽取...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="drawn-history">
+                        <label>歷史已抽號碼：</label>
+                        <div id="drawn-history-list" class="history-list"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- 動畫效果容器 -->
+    <div id="floating-animations"></div>
+
+    <!-- Timer Notification Modal -->
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <div class="bell-icon"><i class="fas fa-bell"></i></div>
+            <h2>時間到！</h2>
+            <p>倒數計時已結束</p>
+            <button id="close-modal-btn" class="primary-btn">確認</button>
+        </div>
+    </div>
+
+    <!-- Audio for timer -->
+    <audio id="timer-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-alarm-digital-clock-beep-989.mp3" preload="auto"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>
